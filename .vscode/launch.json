@@ -8,7 +8,8 @@
             "skipFiles": ["<node_internals>/**"],
             "program": "${workspaceFolder}/dist/server.js",
             "preLaunchTask": "tsc: build - tsconfig.json",
-            "outFiles": ["${workspaceFolder}/dist/**/*.js"]
+            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+            "runtimeArgs": ["--env-file=.env"]
         }
     ]
 }
