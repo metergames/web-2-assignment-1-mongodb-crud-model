@@ -13,6 +13,9 @@ createServer(async function (request: IncomingMessage, response: ServerResponse)
     await initialized;
     response.writeHead(200, { "Content-Type": "text/plain" });
 
+    // Add user
+    response.write("--- ADD USER ---\n");
+
     // Valid inserts
     response.write(await handleAddUser("alex_w", "Alex", "alex.w@example.com", true));
     response.write("\n" + (await handleAddUser("maria_c", "Maria", "maria.c@example.com", true)));
@@ -54,6 +57,23 @@ createServer(async function (request: IncomingMessage, response: ServerResponse)
     // Invalid isActive (forced wrong type)
     response.write("\n" + (await handleAddUser("oliver_d", "Oliver", "oliver.d@example.com", "true" as unknown as boolean)));
 
+    // ==========
+
+    // Get user
+    response.write("\n\n--- GET USER ---\n");
+
+    // Valid get (user exists)
+    response.write(await handleGetUser("alex_w"));
+
+    // Valid get (user exists)
+    response.write("\n" + (await handleGetUser("maria_c")));
+
+    // Get user that doesn't exist
+    response.write("\n" + (await handleGetUser("nonexistent_user")));
+
+    // Get user with invalid username format (too short)
+    response.write("\n" + (await handleGetUser("ab")));
+
     response.end("\n\nEnded program");
 }).listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}/`);
@@ -70,11 +90,26 @@ createServer(async function (request: IncomingMessage, response: ServerResponse)
 async function handleAddUser(username: string, firstName: string, email: string, isActive: boolean): Promise<string> {
     try {
         const userToAdd: userModel.User = await userModel.addUser(username, firstName, email, isActive);
-        return `Successfully added user: ${userToAdd.username} - ${userToAdd.firstName} - ${userToAdd.email} - ${isActive ? "Active" : "Inactive"}`;
+        return `Successfully added user: ${userToAdd.username} - ${userToAdd.firstName} - ${userToAdd.email} - ${userToAdd.isActive ? "Active" : "Inactive"}`;
     } catch (error) {
-        if (error instanceof InvalidInputError) return `Adding pokemon failed - Invalid input - ${error.message}`;
-        if (error instanceof DuplicateError) return `Adding pokemon failed - Duplicate error - ${error.message}`;
-        if (error instanceof DatabaseError) return `Adding pokemon failed - Database error - ${error.message}`;
-        return `Adding pokemon failed - Unknown error - ${error}`;
+        if (error instanceof InvalidInputError) return `Adding user failed - Invalid input - ${error.message}`;
+        if (error instanceof DuplicateError) return `Adding user failed - Duplicate error - ${error.message}`;
+        if (error instanceof DatabaseError) return `Adding user failed - Database error - ${error.message}`;
+        return `Adding user failed - Unknown error - ${error}`;
+    }
+}
+
+/**
+ * Retrieves a user via the model and returns a status message.
+ * @param username The username of the user to retrieve.
+ * @returns A success or error message.
+ */
+async function handleGetUser(username: string): Promise<string> {
+    try {
+        const found: userModel.User = await userModel.getUser(username);
+        return `Successfully found user: ${found.username} - ${found.firstName} - ${found.email} - ${found.isActive ? "Active" : "Inactive"}`;
+    } catch (error) {
+        if (error instanceof DatabaseError) return `Getting user failed - Database error - ${error.message}`;
+        return `Getting user failed - Unknown error - ${error}`;
     }
 }

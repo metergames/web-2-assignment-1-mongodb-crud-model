@@ -83,5 +83,27 @@ async function addUser(username: string, firstName: string, email: string, isAct
     }
 }
 
-export { initialize, addUser };
+/**
+ * Retrieves a user from the users collection by username.
+ * @param username The username of the user to retrieve.
+ * @returns The user object matching the username, if found.
+ */
+async function getUser(username: string): Promise<User> {
+    if (!usersCollection) throw new DatabaseError("Error when adding user - Collection not initialized");
+
+    try {
+        const found: User | null = await usersCollection.findOne<User>({ username: username });
+        if (!found) throw new DatabaseError(`Couldn't find user ${username}`);
+        return found;
+    } catch (error) {
+        if (error instanceof DatabaseError) throw new DatabaseError(error.message);
+        if (error instanceof Error) {
+            console.error(`Unexpected error: ${error.message}`);
+            throw new DatabaseError(`Unexpected error: ${error.message}`);
+        }
+        throw new DatabaseError(`Unexpected error - Unknown error: ${error}`);
+    }
+}
+
+export { initialize, addUser, getUser };
 export type { User };
