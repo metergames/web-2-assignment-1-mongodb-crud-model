@@ -93,6 +93,41 @@ createServer(async function (request: IncomingMessage, response: ServerResponse)
     // Get all users (display first 100 - more than exist)
     response.write("\n\n" + (await handleGetAllUsers(100)));
 
+    // ==========
+
+    // Update user
+    response.write("\n\n--- UPDATE USER ---\n");
+
+    // Valid update (change username)
+    response.write(await handleUpdateUser("alex_w", "alex_williams", "Alex", "alex.w@example.com", true));
+
+    // Valid update (change email)
+    response.write("\n" + (await handleUpdateUser("maria_c", "maria_c", "Maria", "maria.santos@example.com", true)));
+
+    // Valid update (change first name)
+    response.write("\n" + (await handleUpdateUser("liam_01", "liam_01", "William", "liam.01@example.com", false)));
+
+    // Valid update (change active status)
+    response.write("\n" + (await handleUpdateUser("sara_k", "sara_k", "Sara", "sara.k@example.com", false)));
+
+    // Update user that doesn't exist
+    response.write("\n" + (await handleUpdateUser("nonexistent", "nonexistent_new", "Test", "test@example.com", true)));
+
+    // Update to duplicate username
+    response.write("\n" + (await handleUpdateUser("noah_r", "maria_c", "Noah", "noah.new@example.com", true)));
+
+    // Update to duplicate email
+    response.write("\n" + (await handleUpdateUser("noah_r", "noah_r", "Noah", "maria.santos@example.com", true)));
+
+    // Update with invalid new username (too short)
+    response.write("\n" + (await handleUpdateUser("noah_r", "ab", "Noah", "noah.r@example.com", true)));
+
+    // Update with invalid new first name (contains numbers)
+    response.write("\n" + (await handleUpdateUser("noah_r", "noah_r", "Noah1", "noah.r@example.com", true)));
+
+    // Update with invalid new email
+    response.write("\n" + (await handleUpdateUser("noah_r", "noah_r", "Noah", "not-an-email", true)));
+
     response.end("\n\nEnded program");
 }).listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}/`);
@@ -152,5 +187,38 @@ async function handleGetAllUsers(limit: number): Promise<string> {
     } catch (error) {
         if (error instanceof DatabaseError) return `Getting users failed - Database error - ${error.message}`;
         return `Getting users failed - Unknown error - ${error}`;
+    }
+}
+
+/**
+ * Updates a user via the model and returns a status message.
+ * @param username The original username of the user to update.
+ * @param newUsername A new unique identifier for the user. Must be between 3 and 20 characters.
+ * @param newFirstName The new first name (only letters accepted).
+ * @param newEmail The new email address.
+ * @param newIsActive The new active status of the user's account (true if active, false otherwise).
+ * @returns A success or error message.
+ */
+async function handleUpdateUser(
+    username: string,
+    newUsername: string,
+    newFirstName: string,
+    newEmail: string,
+    newIsActive: boolean,
+): Promise<string> {
+    try {
+        const updatedUser: userModel.User = await userModel.updateUser(
+            username,
+            newUsername,
+            newFirstName,
+            newEmail,
+            newIsActive,
+        );
+        return `Successfully updated user ${username}: ${updatedUser.username} - ${updatedUser.firstName} - ${updatedUser.email} - ${updatedUser.isActive ? "Active" : "Inactive"}`;
+    } catch (error) {
+        if (error instanceof InvalidInputError) return `Updating user failed - Invalid input - ${error.message}`;
+        if (error instanceof DuplicateError) return `Updating user failed - Duplicate error - ${error.message}`;
+        if (error instanceof DatabaseError) return `Updating user failed - Database error - ${error.message}`;
+        return `Updating user failed - Unknown error - ${error}`;
     }
 }

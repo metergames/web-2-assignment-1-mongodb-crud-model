@@ -1,4 +1,4 @@
-import { MongoError, Db, MongoClient, Collection } from "mongodb";
+import { MongoError, Db, MongoClient, Collection, type UpdateResult } from "mongodb";
 import { isValidUserData } from "./validateUtils.js";
 import { DatabaseError } from "./DatabaseError.js";
 import { DuplicateError } from "./DuplicateError.js";
@@ -64,9 +64,9 @@ async function addUser(username: string, firstName: string, email: string, isAct
     const existingUser = await usersCollection.findOne({ $or: [{ username: username }, { email: email }] });
     if (existingUser) {
         if (existingUser.username === username && existingUser.email === email)
-            throw new DuplicateError("Both this email and username are already in use.");
-        else if (existingUser.username === username) throw new DuplicateError("This username is already taken.");
-        else if (existingUser.email === email) throw new DuplicateError("A user with this email already exists.");
+            throw new DuplicateError("Both this email and username are already in use");
+        else if (existingUser.username === username) throw new DuplicateError("This username is already taken");
+        else if (existingUser.email === email) throw new DuplicateError("A user with this email already exists");
     }
 
     try {
@@ -123,5 +123,53 @@ async function getAllUsers(): Promise<User[]> {
     }
 }
 
-export { initialize, addUser, getUser, getAllUsers };
+/**
+ * Updates an existing user in the users collection after validating new input and checking for duplicates.
+ * @param username The original username of the user to update.
+ * @param newUsername A new unique identifier for the user. Must be between 3 and 20 characters.
+ * @param newFirstName The new first name (only letters accepted).
+ * @param newEmail The new email address.
+ * @param newIsActive The new active status of the user's account (true if active, false otherwise).
+ * @returns The updated user object.
+ */
+async function updateUser(
+    username: string,
+    newUsername: string,
+    newFirstName: string,
+    newEmail: string,
+    newIsActive: boolean,
+): Promise<User> {
+    isValidUserData(newUsername, newFirstName, newEmail, newIsActive);
+
+    if (!usersCollection) throw new DatabaseError("Collection not initialized");
+
+    const existingUser = await usersCollection.findOne({
+        $and: [{ $or: [{ username: newUsername }, { email: newEmail }] }, { username: { $ne: username } }],
+    });
+    if (existingUser) {
+        if (existingUser.username === newUsername && existingUser.email === newEmail)
+            throw new DuplicateError("Both this email and username are already in use");
+        else if (existingUser.username === newUsername) throw new DuplicateError("This username is already taken");
+        else if (existingUser.email === newEmail) throw new DuplicateError("A user with this email already exists");
+    }
+
+    try {
+        const result: UpdateResult = await usersCollection.updateOne(
+            { username: username },
+            { $set: { username: newUsername, firstName: newFirstName, email: newEmail, isActive: newIsActive } },
+        );
+        if (result.matchedCount === 0) throw new DatabaseError(`Couldn't find user ${username} to update`);
+        console.log(`Updated user ${username}`);
+        return { username: newUsername, firstName: newFirstName, email: newEmail, isActive: newIsActive };
+    } catch (error) {
+        if (error instanceof DatabaseError) throw new DatabaseError(error.message);
+        if (error instanceof Error) {
+            console.error(`Unexpected error: ${error.message}`);
+            throw new DatabaseError(`Unexpected error: ${error.message}`);
+        }
+        throw new DatabaseError(`Unexpected error - Unknown error: ${error}`);
+    }
+}
+
+export { initialize, addUser, getUser, getAllUsers, updateUser };
 export type { User };
