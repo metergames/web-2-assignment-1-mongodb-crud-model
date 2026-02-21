@@ -12,7 +12,48 @@ let initialized = userModel.initialize(DB_NAME, false, url);
 createServer(async function (request: IncomingMessage, response: ServerResponse): Promise<void> {
     await initialized;
     response.writeHead(200, { "Content-Type": "text/plain" });
+
+    // Valid inserts
     response.write(await handleAddUser("alex_w", "Alex", "alex.w@example.com", true));
+    response.write("\n" + (await handleAddUser("maria_c", "Maria", "maria.c@example.com", true)));
+    response.write("\n" + (await handleAddUser("liam_01", "Liam", "liam.01@example.com", false)));
+
+    // Duplicate username
+    response.write("\n" + (await handleAddUser("alex_w", "Alex", "alex2@example.com", true)));
+
+    // Duplicate email
+    response.write("\n" + (await handleAddUser("alex_new", "Alex", "alex.w@example.com", true)));
+
+    // Duplicate username + email
+    response.write("\n" + (await handleAddUser("maria_c", "Maria", "maria.c@example.com", true)));
+
+    // Username too short
+    response.write("\n" + (await handleAddUser("ab", "Abel", "abel@example.com", true)));
+
+    // Username too long (21 chars)
+    response.write("\n" + (await handleAddUser("this_username_is_21_c", "Taylor", "taylor@example.com", true)));
+
+    // Username invalid characters
+    response.write("\n" + (await handleAddUser("alex-w", "Alex", "alexw@example.com", true)));
+
+    // Username all numbers (invalid: must contain a letter)
+    response.write("\n" + (await handleAddUser("12345", "Num", "num@example.com", true)));
+
+    // Username only underscores (invalid)
+    response.write("\n" + (await handleAddUser("____", "Underscore", "u@example.com", true)));
+
+    // First name invalid (non-letters)
+    response.write("\n" + (await handleAddUser("sara_k", "Sara1", "sara.k@example.com", true)));
+
+    // First name empty
+    response.write("\n" + (await handleAddUser("noah_r", "", "noah.r@example.com", true)));
+
+    // Invalid email
+    response.write("\n" + (await handleAddUser("emma_t", "Emma", "not-an-email", true)));
+
+    // Invalid isActive (forced wrong type)
+    response.write("\n" + (await handleAddUser("oliver_d", "Oliver", "oliver.d@example.com", "true" as unknown as boolean)));
+
     response.end("\n\nEnded program");
 }).listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}/`);
