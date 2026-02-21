@@ -10,6 +10,13 @@ const url = process.env.URL_PRE! + process.env.MONGODB_PWD! + process.env.URL_PO
 let initialized = userModel.initialize(DB_NAME, false, url);
 
 createServer(async function (request: IncomingMessage, response: ServerResponse): Promise<void> {
+    // Avoid processing /favicon.ico requests
+    if (request.url !== "/") {
+        response.writeHead(404, { "Content-Type": "text/plain" });
+        response.end("Not found");
+        return;
+    }
+
     await initialized;
     response.writeHead(200, { "Content-Type": "text/plain" });
 
