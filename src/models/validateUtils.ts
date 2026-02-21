@@ -1,5 +1,4 @@
 import validator from "validator";
-import { DuplicateError } from "./DuplicateError.js";
 import { InvalidInputError } from "./InvalidInputError.js";
 
 const MINIMUM_USERNAME_LENGTH = 3;

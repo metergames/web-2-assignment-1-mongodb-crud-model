@@ -1,6 +1,7 @@
 import { MongoError, Db, MongoClient, Collection } from "mongodb";
 import { isValidUserData } from "./validateUtils.js";
 import { DatabaseError } from "./DatabaseError.js";
+import { DuplicateError } from "./DuplicateError.js";
 
 const USERS_COLLECTION = "users";
 
@@ -14,6 +15,12 @@ interface User {
 let client: MongoClient;
 let usersCollection: Collection<User> | undefined;
 
+/**
+ * Initializes the MongoDB client and ensures the users collection exists.
+ * @param dbFilename Name of the database to connect to.
+ * @param resetFlag If true, drops the users collection when it exists.
+ * @param url MongoDB connection string.
+ */
 async function initialize(dbFilename: string, resetFlag: boolean, url: string): Promise<void> {
     try {
         client = new MongoClient(url);
@@ -41,5 +48,40 @@ async function initialize(dbFilename: string, resetFlag: boolean, url: string): 
     }
 }
 
-export { initialize };
+/**
+ * Adds a new user to the users collection after validating input and user uniqueness.
+ * @param username A unique identifier for the user. Must be between 3 and 20 characters.
+ * @param firstName The user's name (only letters accepted).
+ * @param email The user's email address.
+ * @param isActive The active status of the user's account (true if active, false otherwise).
+ * @returns The user object that was inserted.
+ */
+async function addUser(username: string, firstName: string, email: string, isActive: boolean): Promise<User> {
+    isValidUserData(username, firstName, email, isActive);
+
+    if (!usersCollection) throw new DatabaseError("Error when adding user - Collection not initialized");
+
+    const existingUser = await usersCollection.findOne({ $or: [{ username: username }, { email: email }] });
+    if (existingUser) {
+        if (existingUser.username === username && existingUser.email === email)
+            throw new DuplicateError("Both this email and username are already in use.");
+        else if (existingUser.username === username) throw new DuplicateError("This username is already taken.");
+        else if (existingUser.email === email) throw new DuplicateError("A user with this email already exists.");
+    }
+
+    try {
+        const userToAdd: User = { username: username, firstName: firstName, email: email, isActive: isActive };
+        console.log(`Inserted user ${(await usersCollection.insertOne(userToAdd)).insertedId}`);
+        return userToAdd;
+    } catch (error) {
+        if (error instanceof Error) {
+            console.error(`Unexpected error: ${error.message}`);
+            throw new DatabaseError(`Unexpected error: ${error.message}`);
+        }
+
+        throw new DatabaseError(`Unexpected error - Unknown error: ${error}`);
+    }
+}
+
+export { initialize, addUser };
 export type { User };
