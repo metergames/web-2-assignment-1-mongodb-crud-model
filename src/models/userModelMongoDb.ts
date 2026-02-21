@@ -1,4 +1,4 @@
-import { MongoError, Db, MongoClient, Collection, type UpdateResult } from "mongodb";
+import { MongoError, Db, MongoClient, Collection, type UpdateResult, type DeleteResult } from "mongodb";
 import { isValidUserData } from "./validateUtils.js";
 import { DatabaseError } from "./DatabaseError.js";
 import { DuplicateError } from "./DuplicateError.js";
@@ -171,5 +171,26 @@ async function updateUser(
     }
 }
 
-export { initialize, addUser, getUser, getAllUsers, updateUser };
+/**
+ * Deletes a user from the users collection by username.
+ * @param username The username of the user to delete.
+ */
+async function deleteUser(username: string): Promise<void> {
+    if (!usersCollection) throw new DatabaseError("Collection not initialized");
+
+    try {
+        const result: DeleteResult = await usersCollection.deleteOne({ username: username });
+        if (result.deletedCount === 0) throw new DatabaseError(`Couldn't find user ${username} to delete`);
+        console.log(`Deleted user ${username}`);
+    } catch (error) {
+        if (error instanceof DatabaseError) throw new DatabaseError(error.message);
+        if (error instanceof Error) {
+            console.error(`Unexpected error: ${error.message}`);
+            throw new DatabaseError(`Unexpected error: ${error.message}`);
+        }
+        throw new DatabaseError(`Unexpected error - Unknown error: ${error}`);
+    }
+}
+
+export { initialize, addUser, getUser, getAllUsers, updateUser, deleteUser };
 export type { User };

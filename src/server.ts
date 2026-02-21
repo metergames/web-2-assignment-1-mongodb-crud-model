@@ -135,6 +135,23 @@ createServer(async function (request: IncomingMessage, response: ServerResponse)
     // Update with invalid new email
     response.write("\n" + (await handleUpdateUser("noah_r", "noah_r", "Noah", "not-an-email", true)));
 
+    // ==========
+
+    // Delete user
+    response.write("\n\n--- DELETE USER ---\n");
+
+    // Valid delete
+    response.write(await handleDeleteUser("alex_williams"));
+
+    // Valid delete
+    response.write("\n" + (await handleDeleteUser("sara_k")));
+
+    // Delete user that doesn't exist
+    response.write("\n" + (await handleDeleteUser("nonexistent_user")));
+
+    // Delete user that was already deleted
+    response.write("\n" + (await handleDeleteUser("alex_williams")));
+
     response.end("\n\nEnded program");
 }).listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}/`);
@@ -227,5 +244,20 @@ async function handleUpdateUser(
         if (error instanceof DuplicateError) return `Updating user failed - Duplicate error - ${error.message}`;
         if (error instanceof DatabaseError) return `Updating user failed - Database error - ${error.message}`;
         return `Updating user failed - Unknown error - ${error}`;
+    }
+}
+
+/**
+ * Deletes a user via the model and returns a status message.
+ * @param username The username of the user to delete.
+ * @returns A success or error message.
+ */
+async function handleDeleteUser(username: string): Promise<string> {
+    try {
+        await userModel.deleteUser(username);
+        return `Successfully deleted user: ${username}`;
+    } catch (error) {
+        if (error instanceof DatabaseError) return `Deleting user failed - Database error - ${error.message}`;
+        return `Deleting user failed - Unknown error - ${error}`;
     }
 }
