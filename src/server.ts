@@ -20,6 +20,8 @@ createServer(async function (request: IncomingMessage, response: ServerResponse)
     response.write(await handleAddUser("alex_w", "Alex", "alex.w@example.com", true));
     response.write("\n" + (await handleAddUser("maria_c", "Maria", "maria.c@example.com", true)));
     response.write("\n" + (await handleAddUser("liam_01", "Liam", "liam.01@example.com", false)));
+    response.write("\n" + (await handleAddUser("sara_k", "Sara", "sara.k@example.com", true)));
+    response.write("\n" + (await handleAddUser("noah_r", "Noah", "noah.r@example.com", true)));
 
     // Duplicate username
     response.write("\n" + (await handleAddUser("alex_w", "Alex", "alex2@example.com", true)));
@@ -74,6 +76,23 @@ createServer(async function (request: IncomingMessage, response: ServerResponse)
     // Get user with invalid username format (too short)
     response.write("\n" + (await handleGetUser("ab")));
 
+    // ==========
+
+    // Get all users
+    response.write("\n\n--- GET ALL USERS ---\n");
+
+    // Get all users (display first 3)
+    response.write(await handleGetAllUsers(3));
+
+    // Get all users (display first 10)
+    response.write("\n\n" + (await handleGetAllUsers(10)));
+
+    // Get all users (display first 1)
+    response.write("\n\n" + (await handleGetAllUsers(1)));
+
+    // Get all users (display first 100 - more than exist)
+    response.write("\n\n" + (await handleGetAllUsers(100)));
+
     response.end("\n\nEnded program");
 }).listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}/`);
@@ -111,5 +130,27 @@ async function handleGetUser(username: string): Promise<string> {
     } catch (error) {
         if (error instanceof DatabaseError) return `Getting user failed - Database error - ${error.message}`;
         return `Getting user failed - Unknown error - ${error}`;
+    }
+}
+
+/**
+ * Retrieves all users via the model and returns a formatted status message.
+ * @param limit The maximum number of users to display
+ * @returns A formatted string containing the first x users, or an error message on failure.
+ */
+async function handleGetAllUsers(limit: number): Promise<string> {
+    try {
+        const userData: userModel.User[] = await userModel.getAllUsers();
+        if (userData.length < limit) limit = userData.length;
+        let built: string = `First ${limit == 1 ? "user" : `${limit} users`} (username - first name - email - active status)`;
+        for (let userIndex = 0; userIndex < limit; userIndex++) {
+            const currentUser: userModel.User | undefined = userData[userIndex];
+            if (currentUser)
+                built += `\n${currentUser.username} - ${currentUser.firstName} - ${currentUser.email} - ${currentUser.isActive ? "Active" : "Inactive"}`;
+        }
+        return built;
+    } catch (error) {
+        if (error instanceof DatabaseError) return `Getting users failed - Database error - ${error.message}`;
+        return `Getting users failed - Unknown error - ${error}`;
     }
 }

@@ -59,7 +59,7 @@ async function initialize(dbFilename: string, resetFlag: boolean, url: string): 
 async function addUser(username: string, firstName: string, email: string, isActive: boolean): Promise<User> {
     isValidUserData(username, firstName, email, isActive);
 
-    if (!usersCollection) throw new DatabaseError("Error when adding user - Collection not initialized");
+    if (!usersCollection) throw new DatabaseError("Collection not initialized");
 
     const existingUser = await usersCollection.findOne({ $or: [{ username: username }, { email: email }] });
     if (existingUser) {
@@ -89,7 +89,7 @@ async function addUser(username: string, firstName: string, email: string, isAct
  * @returns The user object matching the username, if found.
  */
 async function getUser(username: string): Promise<User> {
-    if (!usersCollection) throw new DatabaseError("Error when adding user - Collection not initialized");
+    if (!usersCollection) throw new DatabaseError("Collection not initialized");
 
     try {
         const found: User | null = await usersCollection.findOne<User>({ username: username });
@@ -105,5 +105,23 @@ async function getUser(username: string): Promise<User> {
     }
 }
 
-export { initialize, addUser, getUser };
+/**
+ * Retrieves all users from the users collection.
+ * @returns An array of all user objects in the collection.
+ */
+async function getAllUsers(): Promise<User[]> {
+    if (!usersCollection) throw new DatabaseError("Collection not initialized");
+
+    try {
+        return await await usersCollection.find<User>({}).toArray();
+    } catch (error) {
+        if (error instanceof Error) {
+            console.error(`Unexpected error: ${error.message}`);
+            throw new DatabaseError(`Unexpected error: ${error.message}`);
+        }
+        throw new DatabaseError(`Unexpected error - Unknown error: ${error}`);
+    }
+}
+
+export { initialize, addUser, getUser, getAllUsers };
 export type { User };
