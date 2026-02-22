@@ -3,6 +3,9 @@ import { jest } from "@jest/globals";
 import { MongoMemoryServer } from "mongodb-memory-server";
 
 let mongodbServer: MongoMemoryServer;
+const DB_NAME: string = "web-2-assignment-1-growth-mindset-test";
+
+jest.setTimeout(5000);
 
 const userData: userModel.User[] = [
     { username: "alex_w", firstName: "Alex", email: "alex.w@example.com", isActive: true },
@@ -36,3 +39,29 @@ const userData: userModel.User[] = [
     { username: "zoe_d", firstName: "Zoe", email: "zoe.d@example.com", isActive: true },
     { username: "ivy_g", firstName: "Ivy", email: "ivy.g@example.com", isActive: false },
 ];
+
+const generateUserData = () => userData.splice(Math.floor(Math.random() * userData.length), 1)[0];
+
+beforeAll(async () => {
+    mongodbServer = await MongoMemoryServer.create();
+    console.log("Mock database started");
+});
+
+afterAll(async () => {
+    await mongodbServer.stop();
+    console.log("Mock database stopped");
+});
+
+beforeEach(async () => {
+    try {
+        const URL: string = mongodbServer.getUri();
+        await userModel.initialize(DB_NAME, true, URL);
+    } catch (error: unknown) {
+        if (error instanceof Error) console.error(error.message);
+        else console.error(`Unknown error occurred: ${error}`);
+    }
+});
+
+afterEach(async () => {
+    await userModel.close();
+});
