@@ -49,6 +49,19 @@ async function initialize(dbFilename: string, resetFlag: boolean, url: string): 
 }
 
 /**
+ * Closes the MongoDB client connection.
+ */
+async function close() {
+    try {
+        await client.close();
+        console.log("MongoDB connection closed");
+    } catch (error: unknown) {
+        if (error instanceof Error) console.error(error.message);
+        else console.error("Unknown error during beforeEach in unit tests");
+    }
+}
+
+/**
  * Adds a new user to the users collection after validating input and user uniqueness.
  * @param username A unique identifier for the user. Must be between 3 and 20 characters.
  * @param firstName The user's name (only letters accepted).
@@ -192,5 +205,5 @@ async function deleteUser(username: string): Promise<void> {
     }
 }
 
-export { initialize, addUser, getUser, getAllUsers, updateUser, deleteUser };
+export { initialize, close, addUser, getUser, getAllUsers, updateUser, deleteUser };
 export type { User };
