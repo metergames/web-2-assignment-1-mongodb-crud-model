@@ -65,3 +65,93 @@ beforeEach(async () => {
 afterEach(async () => {
     await userModel.close();
 });
+
+test("Add valid user", async () => {
+    const newUser: userModel.User = generateUserData()!;
+    await userModel.addUser(newUser.username, newUser.firstName, newUser.email, newUser.isActive);
+    const results = await userModel.getCollection().find().toArray();
+
+    expect(Array.isArray(results)).toBe(true);
+    expect(results.length).toBe(1);
+    expect(results[0]?.username).toBe(newUser.username);
+    expect(results[0]?.firstName).toBe(newUser.firstName);
+    expect(results[0]?.email).toBe(newUser.email);
+    expect(results[0]?.isActive).toBe(newUser.isActive);
+});
+
+test("Throw error for duplicate username", async () => {
+    const newUser: userModel.User = generateUserData()!;
+    await userModel.addUser(newUser.username, newUser.firstName, newUser.email, newUser.isActive);
+    const secondUser: userModel.User = generateUserData()!;
+    await expect(
+        userModel.addUser(newUser.username, secondUser.firstName, secondUser.email, secondUser.isActive),
+    ).rejects.toThrow();
+});
+
+test("Throw error for duplicate email", async () => {
+    const newUser: userModel.User = generateUserData()!;
+    await userModel.addUser(newUser.username, newUser.firstName, newUser.email, newUser.isActive);
+    const secondUser: userModel.User = generateUserData()!;
+    await expect(
+        userModel.addUser(secondUser.username, secondUser.firstName, newUser.email, secondUser.isActive),
+    ).rejects.toThrow();
+});
+
+test("Throw error for duplicate username and email", async () => {
+    const newUser: userModel.User = generateUserData()!;
+    await userModel.addUser(newUser.username, newUser.firstName, newUser.email, newUser.isActive);
+    const secondUser: userModel.User = generateUserData()!;
+    await expect(userModel.addUser(newUser.username, secondUser.firstName, newUser.email, secondUser.isActive)).rejects.toThrow();
+});
+
+test("Throw error for invalid username (under 3 characters)", async () => {
+    const newUser: userModel.User = generateUserData()!;
+    await expect(userModel.addUser("ad", newUser.firstName, newUser.email, newUser.isActive)).rejects.toThrow();
+});
+
+test("Throw error for invalid username (over 20 characters)", async () => {
+    const newUser: userModel.User = generateUserData()!;
+    await expect(
+        userModel.addUser("this_username_is_over_20", newUser.firstName, newUser.email, newUser.isActive),
+    ).rejects.toThrow();
+});
+
+test("Throw error for invalid username (special characters)", async () => {
+    const newUser: userModel.User = generateUserData()!;
+    await expect(userModel.addUser("alex-w", newUser.firstName, newUser.email, newUser.isActive)).rejects.toThrow();
+});
+
+test("Throw error for invalid username (only numbers or underscores)", async () => {
+    const newUser: userModel.User = generateUserData()!;
+    await expect(userModel.addUser("12345", newUser.firstName, newUser.email, newUser.isActive)).rejects.toThrow();
+    const secondUser: userModel.User = generateUserData()!;
+    await expect(userModel.addUser("_____", secondUser.firstName, secondUser.email, secondUser.isActive)).rejects.toThrow();
+    const thirdUser: userModel.User = generateUserData()!;
+    await expect(userModel.addUser("1_2_3_4", thirdUser.firstName, thirdUser.email, thirdUser.isActive)).rejects.toThrow();
+});
+
+test("Throw error for invalid first name (contains numbers)", async () => {
+    const newUser: userModel.User = generateUserData()!;
+    await expect(userModel.addUser(newUser.username, `${newUser.firstName}2`, newUser.email, newUser.isActive)).rejects.toThrow();
+});
+
+test("Throw error for empty first name", async () => {
+    const newUser: userModel.User = generateUserData()!;
+    await expect(userModel.addUser(newUser.username, "", newUser.email, newUser.isActive)).rejects.toThrow();
+});
+
+test("Throw error for invalid email", async () => {
+    const newUser: userModel.User = generateUserData()!;
+    await expect(userModel.addUser(newUser.username, newUser.firstName, "not-an-email", newUser.isActive)).rejects.toThrow();
+    const secondUser: userModel.User = generateUserData()!;
+    await expect(
+        userModel.addUser(secondUser.username, secondUser.firstName, "email@example", secondUser.isActive),
+    ).rejects.toThrow();
+});
+
+test("Throw error for invalid active status", async () => {
+    const newUser: userModel.User = generateUserData()!;
+    await expect(
+        userModel.addUser(newUser.username, newUser.firstName, newUser.email, "true" as unknown as boolean),
+    ).rejects.toThrow();
+});

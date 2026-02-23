@@ -109,7 +109,7 @@ async function getUser(username: string): Promise<User> {
         if (!found) throw new DatabaseError(`Couldn't find user ${username}`);
         return found;
     } catch (error) {
-        if (error instanceof DatabaseError) throw new DatabaseError(error.message);
+        if (error instanceof DatabaseError) throw error;
         if (error instanceof Error) {
             console.error(`Unexpected error: ${error.message}`);
             throw new DatabaseError(`Unexpected error: ${error.message}`);
@@ -126,7 +126,7 @@ async function getAllUsers(): Promise<User[]> {
     if (!usersCollection) throw new DatabaseError("Collection not initialized");
 
     try {
-        return await await usersCollection.find<User>({}).toArray();
+        return await usersCollection.find<User>({}).toArray();
     } catch (error) {
         if (error instanceof Error) {
             console.error(`Unexpected error: ${error.message}`);
@@ -175,7 +175,7 @@ async function updateUser(
         console.log(`Updated user ${username}`);
         return { username: newUsername, firstName: newFirstName, email: newEmail, isActive: newIsActive };
     } catch (error) {
-        if (error instanceof DatabaseError) throw new DatabaseError(error.message);
+        if (error instanceof DatabaseError) throw error;
         if (error instanceof Error) {
             console.error(`Unexpected error: ${error.message}`);
             throw new DatabaseError(`Unexpected error: ${error.message}`);
@@ -196,7 +196,7 @@ async function deleteUser(username: string): Promise<void> {
         if (result.deletedCount === 0) throw new DatabaseError(`Couldn't find user ${username} to delete`);
         console.log(`Deleted user ${username}`);
     } catch (error) {
-        if (error instanceof DatabaseError) throw new DatabaseError(error.message);
+        if (error instanceof DatabaseError) throw error;
         if (error instanceof Error) {
             console.error(`Unexpected error: ${error.message}`);
             throw new DatabaseError(`Unexpected error: ${error.message}`);
@@ -205,5 +205,14 @@ async function deleteUser(username: string): Promise<void> {
     }
 }
 
-export { initialize, close, addUser, getUser, getAllUsers, updateUser, deleteUser };
+/**
+ * Retrieves the initialized users collection.
+ * @returns The users collection object.
+ */
+function getCollection(): Collection<User> {
+    if (!usersCollection) throw new DatabaseError("Collection not initialized");
+    return usersCollection;
+}
+
+export { initialize, close, addUser, getUser, getAllUsers, updateUser, deleteUser, getCollection };
 export type { User };

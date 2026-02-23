@@ -7,7 +7,7 @@ import { DatabaseError } from "./models/DatabaseError.js";
 const PORT: number = 1339;
 const DB_NAME: string = "web-2-assignment-1-growth-mindset";
 const url = process.env.URL_PRE! + process.env.MONGODB_PWD! + process.env.URL_POST!;
-let initialized = userModel.initialize(DB_NAME, false, url);
+let initialized = userModel.initialize(DB_NAME, true, url); // Reset flag set to true for testing purposes
 
 createServer(async function (request: IncomingMessage, response: ServerResponse): Promise<void> {
     // Avoid processing /favicon.ico requests
