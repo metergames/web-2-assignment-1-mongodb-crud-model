@@ -155,3 +155,19 @@ test("Throw error for invalid active status", async () => {
         userModel.addUser(newUser.username, newUser.firstName, newUser.email, "true" as unknown as boolean),
     ).rejects.toThrow();
 });
+
+test("Retrieve existing user", async () => {
+    const newUser: userModel.User = generateUserData()!;
+    await userModel.addUser(newUser.username, newUser.firstName, newUser.email, newUser.isActive);
+    const foundUser: userModel.User = await userModel.getUser(newUser.username);
+
+    expect(foundUser.username).toBe(newUser.username);
+    expect(foundUser.firstName).toBe(newUser.firstName);
+    expect(foundUser.email).toBe(newUser.email);
+    expect(foundUser.isActive).toBe(newUser.isActive);
+});
+
+test("Throw error for non-existent user", async () => {
+    const newUser: userModel.User = generateUserData()!;
+    await expect(userModel.getUser(newUser.username)).rejects.toThrow();
+});
